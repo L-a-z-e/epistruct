@@ -357,7 +357,33 @@ node_proposals
 - Expo가 RN + RN Web 빌드를 통합 관리. 무료. "멀티플랫폼 + 무료" 조건 충족.
 - 그래프 시각화: 웹은 react-force-graph / D3, 네이티브는 Skia 기반 렌더 검토.
 
-### 8.3 백엔드 — Modular Monolith (FastAPI) [확정]
+### 8.3 인증 — Supabase Auth [확정]
+
+**선택 근거:** 인증 구현보다 지식 그래프 핵심 기능에 집중. 보안 기본기(Refresh token rotation, 이메일 인증 등) 검증된 구현 제공. 무료 50,000 MAU. JWT 표준 준수로 추후 자체 구현 전환 가능.
+
+**아키텍처:**
+```
+Expo 클라이언트
+  → Supabase Auth SDK로 로그인 (소셜/이메일)
+  → Supabase가 JWT 발급
+  → FastAPI 요청 시 Authorization 헤더에 JWT 포함
+  → FastAPI가 Supabase JWKS endpoint로 토큰 검증
+  → 검증된 user_id로 내 PostgreSQL 조회
+```
+
+**내 DB와의 연동:**
+- Supabase Auth가 사용자 인증 데이터를 관리 (`auth.users`).
+- 내 PostgreSQL에 `users` 테이블 별도 유지 (프로필, `personal_space_id`, 학습 스타일 등).
+- Supabase webhook → 가입 시 내 `users` 테이블에 row 자동 생성.
+- 내 코드에서 사용자 식별은 Supabase가 발급한 `user_id`(UUID)로 통일.
+
+**모듈 구조에서 auth 모듈의 역할:**
+- JWT 검증 미들웨어 (Supabase JWKS 사용).
+- `users` 테이블 CRUD (프로필, 설정).
+- Supabase webhook 수신 엔드포인트.
+- 인증 자체(로그인/가입/토큰 발급)는 Supabase가 처리. auth 모듈은 검증과 프로필 관리만 담당.
+
+### 8.4 백엔드 — Modular Monolith (FastAPI) [확정]
 
 **아키텍처 전략: Modular Monolith → MSA 점진 전환**
 
@@ -365,7 +391,7 @@ node_proposals
 
 ```
 epistruct-api/
-├── auth/           인증 모듈
+├── auth/           JWT 검증 + users 프로필 모듈
 ├── knowledge/      노드+관계+그래프 모듈 (핵심 도메인)
 ├── space/          공간+멤버십 모듈
 └── ai_pipeline/    LLM+임베딩+추출 모듈
@@ -387,7 +413,7 @@ epistruct-api/
 
 AI/LLM 생태계(LangChain·LlamaIndex·임베딩 파이프라인) 1급 지원. 비동기 처리·LLM 스트리밍에 적합. 사용자의 Python 학습 목표와 시너지.
 
-### 8.4 데이터 — PostgreSQL + 확장 [확정]
+### 8.5 데이터 — PostgreSQL + 확장 [확정]
 
 **테이블 구조:**
 - `users`: 사용자. `personal_space_id` 컬럼으로 기본 개인 공간 참조.
@@ -411,7 +437,7 @@ AI/LLM 생태계(LangChain·LlamaIndex·임베딩 파이프라인) 1급 지원. 
 
 (향후 옵션) 그래프 탐색이 본격화되면 Apache AGE(Cypher) 검토.
 
-### 8.5 AI 레이어
+### 8.6 AI 레이어
 - 외부 LLM(Claude API 등) + RAG(pgvector 검색 결합).
 - 노드 추출: structured output(JSON schema) 강제. 응답 스키마: `{node_type, label, description, relationships[]}`.
 - P 노드 생성: AI 제안 + 사용자 확정 게이트 필수. 자동 생성 없음.
@@ -455,7 +481,7 @@ AI/LLM 생태계(LangChain·LlamaIndex·임베딩 파이프라인) 1급 지원. 
 - **O4. 그룹 스코프 동시 편집 동시성 모델** (Phase 2 핵심).
 - **O5. (해결) 출처(provenance) 기록 단위** — Phase 2: `원본 node_id + 이동 시각 + 유저` 최소 기록. Phase 3: diff 저장 추가. (5.6 반영)
 - **O6. (해결) 진입·강등 판정** — AI 제안 + 사용자 확정 게이트 필수. 자동 승격 없음. (8.5 반영)
-- **O7. 인증 방식** — Supabase Auth vs 직접 JWT 결정 필요 (F0 추가, Phase 1-A 착수 전 결정).
+- **O7. (해결) 인증 방식** — Supabase Auth 확정. JWT 검증 + users 프로필 관리는 auth 모듈. 인증 자체는 Supabase 위임. (8.3 반영)
 - **O8. 노드 label 식별자 정책** — UUID가 PK, label은 같은 space 내 unique. 접두사(P:/C:/M:/D:)는 UI 표시용.
 - **O9. (해결) Space 모델** — 개인/그룹 2종 + is_public 플래그 확정. "공유" 스코프 제거. Node Proposal 승인 시스템 포함. (5.5~5.8 반영)
 
@@ -475,8 +501,8 @@ AI/LLM 생태계(LangChain·LlamaIndex·임베딩 파이프라인) 1급 지원. 
 ## 13. 다음 단계
 
 ### 설계 착수 전 결정 필요 (순서대로)
-1. ~~**Space 모델 확정**~~ → **완료** (5.5~5.8 반영. 개인/그룹 + is_public + Node Proposal)
-2. **인증 방식 결정** (O7) — Supabase Auth vs 직접 JWT. 선택에 따라 users 테이블 설계 달라짐.
+1. ~~**Space 모델 확정**~~ → **완료** (5.5~5.8 반영)
+2. ~~**인증 방식 결정**~~ → **완료** (Supabase Auth. 8.3 반영)
 3. **노드 label 정책 확정** (O8) — UUID PK + space 내 unique label 정책.
 
 ### 설계 작업
