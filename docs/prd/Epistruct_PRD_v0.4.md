@@ -1,8 +1,8 @@
 # Epistruct (에피스트럭트) — Product Requirements Document (PRD)
 
-> 버전: v0.3 (초안)
+> 버전: v0.4
 > 작성일: 2026-06-01
-> 상태: Draft — 검토/수정 전제
+> 상태: Draft — 아키텍처 결정사항 반영 중
 > 이름 유래: Epistemology(인식론/지식론) + Structure(구조). 인간이 지식을 인지·학습하는 과정을 시스템적 구조(Graph)로 변환해 저장한다는 목표의 물리적 결합.
 > 기반: 사용자가 파일 기반(thinker 에이전트)으로 실제 운용·검증한 지식 모델을 멀티유저 서비스로 제품화한다.
 > 한 줄 정의: AI 시대에 인간이 지식을 직접 인지·이해하고, 원리 단위로 통찰을 확장하도록 돕는 개인화 지식 구조화 플랫폼.
@@ -143,13 +143,52 @@ Epistruct가 만들려는 것은 다음과 같다.
 - **C 진입**: 1~2개 P로 분해, 2개 이상 서로 다른 기술/도구에서 등장, 기존 C의 스케일 변형이 아님, 직관적 이름.
 - **미충족 시**: 기존 노드에 흡수(example/참조 추가) 또는 강등(C→M, P→C). `--review`류 점검을 백그라운드 작업으로 자동화.
 
-### 5.4 스코프 — 직교 차원
+### 5.4 데이터 계층 모델 (Source → Chunk → Node)
+
+지식 생성 파이프라인은 3개의 독립 레이어로 구성된다. 레이어는 각각 다른 목적을 가지며, 상위 레이어가 삭제돼도 하위 레이어는 독립적으로 유지된다.
+
+```
+Layer 1: Source (원본)     사용자가 넣은 것. 사람이 읽기 위해 보존.
+    ↓ 청킹(chunking)
+Layer 2: Chunk (가공본)    AI가 처리하는 단위. 임베딩 저장. RAG 기반.
+    ↓ LLM 추출 + 사용자 확정
+Layer 3: Node (지식)       P/C/M/D. 사용자가 확정한 구조화된 이해.
+```
+
+**Source 타입:**
+
+| type | 저장 방식 | 비고 |
+|---|---|---|
+| `url` | URL + 크롤링 텍스트 | 원본 사이트 소멸 대비 텍스트 보존 |
+| `pdf` | 파일 저장소(S3) 참조 + 추출 텍스트 | |
+| `youtube` | URL + 자막 텍스트(yt-dlp) | 영상 자체는 저장 불가 |
+| `text` | 입력 텍스트 그대로 | |
+| `conversation` | AI 대화 전체 JSON | AI와 상호작용으로 만든 지식의 출처 |
+
+**레이어 간 연결:**
+- Source → Chunk: 1:N (하나의 Source에서 여러 Chunk)
+- Chunk → Node: N:M (`node_sources` 브릿지 테이블)
+- 하나의 Node는 여러 Source에서 나올 수 있다.
+- 사용자가 직접 생성한 Node는 Source 없이도 존재 가능.
+- Source 삭제 시 Node는 유지 (soft delete 전략으로 계보 보존).
+
+**노드 추출 흐름:**
+```
+Source 저장 → Chunk 분할 → 임베딩 생성(비동기) → LLM 노드 추출 제안
+  → 사용자 리뷰·확정(필수 게이트) → Node + 관계 확정 저장
+```
+- LLM 응답은 structured output(JSON schema)으로 강제.
+- 확정 전 상태: `draft`. 확정 후: `confirmed`. 사용자가 거부하면 `rejected`.
+- 임베딩 생성은 비동기(BackgroundTask). Node 저장은 동기.
+- Node 테이블에 `embedding vector(1536)` 컬럼을 Phase 1-A부터 예약.
+
+### 5.5 스코프 — 직교 차원
 
 - 모든 노드(P/C/M/D)는 **정확히 하나의 스코프**를 가진다: **개인 / 그룹 / 공유**.
 - 스코프는 노드 타입과 **독립(직교)**이다. 원리(P)도 예외 없이 개인/그룹/공유로 존재할 수 있다. (이전 버전에서 원리를 글로벌 전용으로 본 가정은 폐기.)
 - 한 노드는 동시에 여러 스코프에 속하지 않는다.
 
-### 5.5 스코프 간 이동 (지식 융합의 핵심 메커니즘)
+### 5.6 스코프 간 이동 (지식 융합의 핵심 메커니즘)
 
 다른 스코프의 지식을 가져오는 것은 **복사·참조가 아니라 재구성**이다. 이동은 다음 게이트를 반드시 거친다.
 
@@ -161,6 +200,8 @@ Epistruct가 만들려는 것은 다음과 같다.
 - **이동 경로**: 개인 ↔ 그룹, 개인 ↔ 공유, 그룹 ↔ 공유 (양방향).
 - **결과 노드**는 대상 스코프의 언어/맥락으로 유지된다.
 - **출처(provenance)**: 새 노드는 원본과 별도의 **계보(lineage) 메타 관계**로 연결된다. 이는 5.2의 6종 의미 관계와 분리된 축이다.
+  - Phase 2: `원본 node_id + 이동 시각 + 이동 유저` 최소 기록.
+  - Phase 3: 사용자가 어떻게 수정했는지 diff 저장 추가.
 - **근거**: 참조만 허용하면 1.2의 블랙박스 문제가 재발한다. 이해 게이트가 Epistruct를 LLM Wiki와 가르는 지점이며, thinker의 "관계 생성 전 사용자 확인" 규칙을 스코프 이동으로 확장한 것이다.
 
 ---
@@ -170,10 +211,18 @@ Epistruct가 만들려는 것은 다음과 같다.
 ### Phase 1 — 개인 지식 그래프 (내 두뇌를 외부화)
 
 **1-A. 저장·구조화 (먼저 동작 가능한 서비스)**
+- F0. 인증: 회원가입 / 로그인 / 세션 관리. *(Phase 1-A 착수 전제 조건)*
 - F1. 혼합 입력: URL / PDF / 유튜브 / 텍스트 붙여넣기.
+  - 각 입력 타입은 Source로 저장(5.4 데이터 계층 모델).
+  - URL: 크롤링 텍스트 보존. YouTube: yt-dlp 자막 추출. PDF: 파일 저장소 업로드.
 - F2. 입력 소스에서 노드(C/M) + 관계 자동 추출 (사용자 확정 전제).
+  - Source → Chunk 분할 → LLM structured output으로 노드 후보 추출.
+  - 추출 결과는 `draft` 상태로 리뷰 화면에 제공. 사용자가 수정·확정(`confirmed`) 또는 거부(`rejected`).
+  - 임베딩 생성은 비동기. Node 테이블에 `embedding vector(1536)` 컬럼 Phase 1-A부터 예약.
 - F3. 지식 그래프 시각화 및 인터랙티브 탐색.
+  - MVP: **웹 우선**. 네이티브 그래프는 Phase 1-B로 이월. 네이티브 MVP는 리스트/트리 뷰 대체.
 - F4. 노드 직접 편집/병합/삭제 — 사람의 개입·통제 보장 (1.2 결함의 직접 해법).
+  - 삭제는 soft delete(`deleted_at`) 기본. 물리 삭제 없음.
 
 **1-B. 지능화 (차별화 핵심)**
 - F5. 온보딩: 학습 스타일·관심 도메인 파악 (샘플 제시형 + 실제 해보기형 혼합).
@@ -227,21 +276,62 @@ Epistruct가 만들려는 것은 다음과 같다.
 - Expo가 RN + RN Web 빌드를 통합 관리. 무료. "멀티플랫폼 + 무료" 조건 충족.
 - 그래프 시각화: 웹은 react-force-graph / D3, 네이티브는 Skia 기반 렌더 검토.
 
-### 8.3 백엔드 — FastAPI (Python) [확정]
-- AI/LLM 생태계(LangChain·LlamaIndex·임베딩 파이프라인) 1급 지원.
-- 비동기 처리·LLM 스트리밍에 적합.
-- 사용자의 Python 학습 목표와 시너지.
-- (향후 옵션) 아키텍처 도전을 더 원하면 `Python(AI 서비스) + Spring(코어)` 분리 검토. 초기엔 FastAPI 단일.
+### 8.3 백엔드 — Modular Monolith (FastAPI) [확정]
+
+**아키텍처 전략: Modular Monolith → MSA 점진 전환**
+
+초기에는 단일 FastAPI 서버로 시작하되, 내부를 서비스 경계에 따라 모듈로 분리한다. 모듈 경계를 지키면 필요 시 서비스로 뽑아낼 수 있다.
+
+```
+epistruct-api/
+├── auth/           인증 모듈
+├── knowledge/      노드+관계+그래프 모듈 (핵심 도메인)
+├── space/          공간+멤버십 모듈
+└── ai_pipeline/    LLM+임베딩+추출 모듈
+```
+
+**모듈 경계 규칙:**
+- 각 모듈은 자기 테이블만 직접 접근한다. 타 모듈 테이블 직접 JOIN 금지.
+- 모듈 간 호출은 반드시 service layer를 통한다.
+- DB FK 없음. 참조 무결성은 애플리케이션 레벨에서 보장.
+- 모든 레코드는 soft delete(`deleted_at`) 기본. 물리 삭제 없음.
+
+**MSA 분리 트리거 (사전 정의):**
+- `ai_pipeline`: LLM 비용이 전체 운영비 30% 초과, 또는 응답 지연이 핵심 UX에 영향 시.
+- `knowledge`: DAU 10,000 초과, 또는 팀이 도메인별로 분리될 때.
+
+**API 분리 원칙:**
+- `/api/v1/` — 외부 연계용 공개 API (breaking change 불가, 버전 관리).
+- `/internal/` — 모듈 간 내부 호출용 (자유롭게 변경 가능).
+
+AI/LLM 생태계(LangChain·LlamaIndex·임베딩 파이프라인) 1급 지원. 비동기 처리·LLM 스트리밍에 적합. 사용자의 Python 학습 목표와 시너지.
 
 ### 8.4 데이터 — PostgreSQL + 확장 [확정]
-- 노드: `P/C/M/D` 테이블 + 6종 관계를 **인접 리스트 + 재귀 CTE**로 표현.
-- **스코프**: 모든 노드 테이블에 `scope`(개인/그룹/공유) + 소유 공간 참조. 소유자는 `spaces` 테이블(개인/그룹/공유 공간)로 통일.
-- **출처(provenance)**: 스코프 간 이동 계보를 기록하는 별도 메타 관계 테이블(6종 의미 관계와 분리).
-- **pgvector 확장**: 노드/원리 임베딩 저장 → 의미 기반 유사도 검색. 중복 감지(F7), 능동 제안(F6), 원리 전이(F9)의 공통 기반.
-- (향후 옵션) 그래프 탐색이 본격화되면 Apache AGE(Cypher) 검토.
+
+**테이블 구조:**
+- `nodes`: 단일 테이블 + `node_type` enum(P/C/M/D). 노드 타입별 분리 테이블 없음.
+- `node_relationships`: 6종 관계를 인접 리스트로 표현. 재귀 CTE로 그래프 탐색.
+- `sources`: 원본 입력 저장 (type, raw_content, metadata).
+- `chunks`: Source 분할 가공본 + `embedding vector(1536)`.
+- `node_sources`: Node ↔ Source N:M 브릿지 (출처 추적 기반).
+- `spaces`: 공간 테이블. Phase 1-A는 개인 스코프만 구현하되 스키마 껍데기는 포함.
+- `space_members`: 그룹 멤버십 (Phase 2에서 사용).
+- `node_lineage`: 스코프 간 이동 계보 (6종 의미 관계와 분리된 별도 테이블).
+
+**설계 원칙:**
+- DB FK 없음. `space_id`, `user_id` 등 참조 컬럼은 UUID만 보유. 검증은 service layer.
+- Soft delete: 모든 주요 테이블에 `deleted_at TIMESTAMPTZ` 컬럼.
+- 임베딩: Chunk 테이블 + Node 테이블 모두 `embedding vector(1536)` 예약. 생성은 비동기.
+- 이벤트 일관성: 상태 변경은 Outbox Pattern으로 이벤트 유실 방지 (MSA 전환 시 기반).
+
+**pgvector 확장**: 의미 기반 유사도 검색. 중복 감지(F7), 능동 제안(F6), 원리 전이(F9)의 공통 기반.
+
+(향후 옵션) 그래프 탐색이 본격화되면 Apache AGE(Cypher) 검토.
 
 ### 8.5 AI 레이어
 - 외부 LLM(Claude API 등) + RAG(pgvector 검색 결합).
+- 노드 추출: structured output(JSON schema) 강제. 응답 스키마: `{node_type, label, description, relationships[]}`.
+- P 노드 생성: AI 제안 + 사용자 확정 게이트 필수. 자동 생성 없음.
 - 원리 추출/전이, 스코프 간 번역은 별도 프롬프트 파이프라인으로 모듈화.
 - 비용 통제: 캐싱·배치·임베딩 선검색으로 LLM 호출 최소화.
 
@@ -280,8 +370,10 @@ Epistruct가 만들려는 것은 다음과 같다.
 - **O2. 중복 노드 / 원리 유사 판정 임계값** (임베딩 유사도 기준 설정 필요).
 - **O3. (해결) 원리 데이터 모델** — 원리는 별도 노드 레이어(P), 스코프는 직교 차원으로 확정(5장 반영).
 - **O4. 그룹 스코프 동시 편집 동시성 모델** (Phase 2 핵심).
-- **O5. 출처(provenance) 기록 단위·granularity** (노드 단위 / 관계 단위 / 재구성 diff).
-- **O6. 진입·강등 판정의 자동 vs 사용자 확인 경계** (어디까지 자동화하고 어디서 사람이 개입할지).
+- **O5. (해결) 출처(provenance) 기록 단위** — Phase 2: `원본 node_id + 이동 시각 + 유저` 최소 기록. Phase 3: diff 저장 추가. (5.6 반영)
+- **O6. (해결) 진입·강등 판정** — AI 제안 + 사용자 확정 게이트 필수. 자동 승격 없음. (8.5 반영)
+- **O7. 인증 방식** — Supabase Auth vs 직접 JWT 결정 필요 (F0 추가, Phase 1-A 착수 전 결정).
+- **O8. 노드 label 식별자 정책** — UUID가 PK, label은 같은 space 내 unique. 접두사(P:/C:/M:/D:)는 UI 표시용.
 
 ---
 
@@ -298,6 +390,17 @@ Epistruct가 만들려는 것은 다음과 같다.
 
 ## 13. 다음 단계
 
-1. Phase 1-A 상세 설계: ERD(P/C/M/D + scope + spaces + provenance 반영), API 명세, 시스템 아키텍처 다이어그램.
-2. 스코프 간 이동 UX/플로우 정의: 이해 게이트 화면 설계(O5 연계).
-3. 진입 기준 알고리즘화(O6) + 온보딩 스타일 측정(O1) + 유사 판정 임계값(O2).
+### 설계 착수 전 결정 필요 (순서대로)
+1. **Space 모델 확정** — 개인/그룹/공유 공간의 ownership 구조, spaces 테이블 스키마.
+2. **인증 방식 결정** (O7) — Supabase Auth vs 직접 JWT. 선택에 따라 users 테이블 설계 달라짐.
+3. **노드 label 정책 확정** (O8) — UUID PK + space 내 unique label 정책.
+
+### 설계 작업
+4. Phase 1-A ERD: nodes + node_relationships + sources + chunks + node_sources + spaces(껍데기) + node_lineage(껍데기).
+5. 모듈별 API 명세 초안 (knowledge / auth / ai_pipeline).
+6. 노드 추출 리뷰 화면 UX 플로우 (draft → confirmed/rejected).
+
+### Phase 1-B 전 결정 필요
+7. 온보딩 학습 스타일 측정 방법 (O1).
+8. 중복 감지 임베딩 유사도 임계값 (O2).
+9. 네이티브 그래프 시각화 전략 (Phase 1-B 이월 확정).
