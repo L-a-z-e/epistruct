@@ -420,7 +420,7 @@ AI/LLM 생태계(LangChain·LlamaIndex·임베딩 파이프라인) 1급 지원. 
 - `spaces`: 공간 테이블. `type(personal/group)`, `is_public`, `settings JSONB`. Phase 1-A는 personal만 구현하되 스키마 전체 포함.
 - `space_members`: 공간 멤버십. `role(owner/admin/member/viewer)`. 개인 공간도 본인이 owner로 등록.
 - `node_proposals`: 그룹 노드 변경 제안 (require_approval=true 시 사용). Phase 2.
-- `nodes`: 단일 테이블 + `node_type` enum(P/C/M/D). `space_id`, `created_by` 포함.
+- `nodes`: 단일 테이블 + `node_type` enum(P/C/M/D). `space_id`, `created_by`, `label`(kebab-case 정규화), `display_name`(원본 표기) 포함. `(space_id, node_type, label)` unique 제약.
 - `node_relationships`: 6종 관계를 인접 리스트로 표현. 재귀 CTE로 그래프 탐색.
 - `sources`: 원본 입력 저장 (`type`, `raw_content`, `metadata`).
 - `chunks`: Source 분할 가공본 + `embedding vector(1536)`.
@@ -482,7 +482,7 @@ AI/LLM 생태계(LangChain·LlamaIndex·임베딩 파이프라인) 1급 지원. 
 - **O5. (해결) 출처(provenance) 기록 단위** — Phase 2: `원본 node_id + 이동 시각 + 유저` 최소 기록. Phase 3: diff 저장 추가. (5.6 반영)
 - **O6. (해결) 진입·강등 판정** — AI 제안 + 사용자 확정 게이트 필수. 자동 승격 없음. (8.5 반영)
 - **O7. (해결) 인증 방식** — Supabase Auth 확정. JWT 검증 + users 프로필 관리는 auth 모듈. 인증 자체는 Supabase 위임. (8.3 반영)
-- **O8. 노드 label 식별자 정책** — UUID가 PK, label은 같은 space 내 unique. 접두사(P:/C:/M:/D:)는 UI 표시용.
+- **O8. (해결) 노드 label 식별자 정책** — UUID PK. `(space_id, node_type, label)` unique 제약. label은 저장 시 kebab-case 정규화, `display_name` 컬럼 별도 유지. 접두사(P:/C:/M:/D:)는 UI 표시용, 식별자 아님. AI 제안 + 사용자 확정. node_type 승격/강등 시 UUID 불변으로 참조 안전.
 - **O9. (해결) Space 모델** — 개인/그룹 2종 + is_public 플래그 확정. "공유" 스코프 제거. Node Proposal 승인 시스템 포함. (5.5~5.8 반영)
 
 ---
@@ -503,7 +503,7 @@ AI/LLM 생태계(LangChain·LlamaIndex·임베딩 파이프라인) 1급 지원. 
 ### 설계 착수 전 결정 필요 (순서대로)
 1. ~~**Space 모델 확정**~~ → **완료** (5.5~5.8 반영)
 2. ~~**인증 방식 결정**~~ → **완료** (Supabase Auth. 8.3 반영)
-3. **노드 label 정책 확정** (O8) — UUID PK + space 내 unique label 정책.
+3. ~~**노드 label 정책 확정**~~ → **완료** (UUID PK + (space_id, node_type, label) unique + display_name 분리. O8 반영)
 
 ### 설계 작업
 4. Phase 1-A ERD: nodes + node_relationships + sources + chunks + node_sources + spaces(껍데기) + node_lineage(껍데기).
