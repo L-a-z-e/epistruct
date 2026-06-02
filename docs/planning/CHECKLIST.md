@@ -1,7 +1,65 @@
 # Epistruct 개발 체크리스트
 
-> 마지막 업데이트: 2026-06-02
+> 마지막 업데이트: 2026-06-03
 > 기준 문서: [PRD v0.7](../prd/Epistruct_PRD_v0.7.md)
+
+---
+
+## 개발 환경 준비
+
+> Phase 1-A 착수 전 로컬 환경 세팅. IDE → 런타임 → DB 순서로 진행.
+> 패키지 구조 기준: [docs/design/package-structure.md](../design/package-structure.md)
+
+### IDE — PyCharm + WebStorm
+
+- [ ] PyCharm Professional 설치 (백엔드)
+  - [ ] Python 플러그인 활성화 (기본 내장)
+  - [ ] Database Tools 연결 확인 (PostgreSQL — 별도 툴 불필요)
+  - [ ] `.env` 파일 자동 인식 확인 (EnvFile 플러그인 or 내장)
+- [ ] WebStorm 설치 (프론트엔드)
+  - [ ] Expo / React Native 관련 플러그인 설치
+  - [ ] ESLint + Prettier 연동 설정
+  - [ ] `tsconfig.json`의 `@/` 절대경로 alias 인식 확인
+- [ ] 공통 설정
+  - [ ] JetBrains 단축키 프로필 통일
+  - [ ] Git 연동 확인 (양쪽 IDE)
+
+### 런타임
+
+- [ ] Python 3.11+ 설치 확인 (`python --version`)
+- [ ] `uv` 설치 (`pip install uv` 또는 `brew install uv`) — 패키지·가상환경 통합
+- [ ] Node.js LTS(20+) 설치 확인 (`node --version`)
+- [ ] pnpm 설치 확인 (`npm install -g pnpm`)
+- [ ] Expo CLI 설치 (`pnpm add -g expo-cli` 또는 `npx expo`)
+
+### DB — Docker (PostgreSQL + pgvector)
+
+> `docker compose up -d` / `docker compose down`으로 환경 단위 제어
+
+- [ ] Docker Desktop 설치 및 실행 확인 (`docker --version`)
+- [ ] `docker-compose.yml` 작성
+  - [ ] `pgvector/pgvector:pg16` 이미지 사용 (pgvector 포함 공식 이미지)
+  - [ ] 포트: `5432:5432`
+  - [ ] 볼륨 마운트: `postgres_data:/var/lib/postgresql/data` (데이터 영속화)
+  - [ ] 환경변수: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
+  - [ ] healthcheck 설정 (FastAPI 기동 시 DB 준비 완료 대기용)
+- [ ] `.env` 파일 구성 (`DATABASE_URL` 포함)
+- [ ] `.env` `.gitignore` 등록 확인
+- [ ] 컨테이너 기동 확인: `docker compose up -d`
+- [ ] pgvector 확장 활성화
+  - [ ] `CREATE EXTENSION IF NOT EXISTS vector;` 실행
+  - [ ] `\dx` 로 vector 확장 목록 확인
+- [ ] PyCharm Database Tools에서 PostgreSQL 연결 확인
+
+### 패키지 구조 확정
+
+- [x] 패키지 구조 설계 완료 — [docs/design/package-structure.md](../design/package-structure.md)
+  - [x] 백엔드: 모듈 우선 수직 슬라이스 (`src/modules/{domain}/domain|application|infrastructure|presentation`)
+  - [x] 프론트엔드: Expo Router 분리 + feature 자체 완결 (`app/` 라우팅만, `src/features/` 로직)
+  - [x] 모듈 간 통신: `gateway.py` (동기) + Domain Events (비동기)
+  - [x] 모듈 경계 강제: `__init__.py` 공개 API + 아키텍처 테스트
+- [ ] 백엔드 프로젝트 스캐폴딩 생성 (디렉토리 뼈대)
+- [ ] 프론트엔드 프로젝트 스캐폴딩 생성 (디렉토리 뼈대)
 
 ---
 
