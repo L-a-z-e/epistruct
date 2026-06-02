@@ -1,6 +1,6 @@
 # Epistruct 개발 체크리스트
 
-> 마지막 업데이트: 2026-06-01
+> 마지막 업데이트: 2026-06-02
 > 기준 문서: [PRD v0.7](../prd/Epistruct_PRD_v0.7.md)
 
 ---
@@ -36,23 +36,26 @@
 > 목표: 첫 번째로 동작하는 서비스. 입력 → 노드 추출 → 그래프 확인 → 편집.
 
 ### 설계
-- [ ] ERD 작성
-  - [ ] `users` 테이블
-  - [ ] `spaces` + `space_members` 테이블 (personal 구현, group 껍데기)
-  - [ ] `sources` 테이블 (url/pdf/youtube/text/conversation)
-  - [ ] `chunks` 테이블 (embedding vector 예약)
-  - [ ] `nodes` 테이블 (label/display_name/embedding 예약)
-  - [ ] `node_relationships` 테이블 (6종 관계)
-  - [ ] `node_sources` 브릿지 테이블
-  - [ ] `node_lineage` 테이블 (껍데기)
-  - [ ] `node_proposals` 테이블 (껍데기)
-- [ ] API 명세 초안
-  - [ ] auth 모듈 (JWT 검증 미들웨어, users 프로필, Supabase webhook)
-  - [ ] knowledge 모듈 (nodes CRUD, relationships, graph 조회)
-  - [ ] space 모듈 (spaces CRUD, space_members)
-  - [ ] ai_pipeline 모듈 (source 처리, 노드 추출, 임베딩)
-- [ ] 노드 추출 리뷰 UX 플로우 (draft → confirmed/rejected)
-- [ ] 노드 추출 LLM structured output 스키마 정의
+- [x] ERD 작성 (`docs/design/erd-ddd.md` — DDD Bounded Context 기반 재설계 완료)
+  - [x] `users` 테이블
+  - [x] `spaces` 테이블 (순수 지식 컨테이너, `owner_type` 힌트 컬럼)
+  - [x] `groups` + `group_members` 테이블 (`space_members` → DDD 리팩토링으로 Group 도메인 분리)
+  - [x] `sources` 테이블 (url/pdf/youtube/text/conversation)
+  - [x] `chunks` 테이블 (embedding vector 예약)
+  - [x] `nodes` 테이블 (label/display_name/embedding 예약)
+  - [x] `node_relationships` 테이블 (6종 관계)
+  - [x] `node_sources` 브릿지 테이블
+  - [x] `node_lineage` 테이블 (껍데기, Phase 2)
+  - [x] `node_proposals` 테이블 (껍데기, Phase 2)
+  - [x] `learning_strategies` 테이블 (Strategy 도메인 분리)
+- [x] API 명세 초안 (`docs/design/api-spec.md`)
+  - [x] auth 모듈 — REST: GET/PATCH/DELETE /auth/me, POST /auth/webhook
+  - [x] knowledge 모듈 — GraphQL: node/nodes/graph Query + confirmNode/rejectNode/updateNode/deleteNode/createRelationship Mutation
+  - [x] space 모듈 — REST: spaces CRUD, groups CRUD + group_members 관리
+  - [x] ai_pipeline 모듈 — REST+Polling+SSE: POST /sources (HTTP 202), GET /jobs/:id (폴링), GET /jobs/:id/stream (SSE)
+  - [x] 내부 gRPC 계약 — AuthService / SpaceService / KnowledgeService / PipelineService .proto 정의
+- [x] 노드 추출 리뷰 UX 플로우 (draft → confirmed/rejected) — `docs/design/ux-node-review.md`
+- [x] 노드 추출 LLM structured output 스키마 정의 — `docs/design/llm-extraction-schema.md`
 
 ### 백엔드 구현 (FastAPI)
 - [ ] 프로젝트 셋업 (Modular Monolith 구조)
