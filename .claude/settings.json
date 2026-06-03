@@ -1,0 +1,50 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [{
+          "type": "command",
+          "command": "python3 $HOME/.claude/hooks/error-guard.py",
+          "timeout": 3000
+        }]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{
+          "type": "command",
+          "command": "python3 $HOME/.claude/hooks/error-guard.py",
+          "timeout": 3000
+        }]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [{
+          "type": "command",
+          "command": "python3 $HOME/.claude/hooks/error-guard.py",
+          "timeout": 3000
+        }]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [{
+          "type": "command",
+          "command": "python3 $HOME/.claude/hooks/knowledge-index.py",
+          "timeout": 5000
+        }]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash",
+        "hooks": [{
+          "type": "command",
+          "command": "python3 $HOME/.claude/hooks/error-guard.py",
+          "timeout": 3000
+        }]
+      }
+    ]
+  }
+}
