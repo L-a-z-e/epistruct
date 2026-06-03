@@ -10,3 +10,4 @@
 {"ts": "2026-06-03T10:34:52.868947", "type": "knowledge_write", "path": "errors/docker-pg18-volume-path.md", "category": "errors", "subcategory": null}
 {"ts": "2026-06-03T10:35:06.121560", "type": "knowledge_write", "path": "errors/expo-sdk-upgrade-53-to-56.md", "category": "errors", "subcategory": null}
 {"ts": "2026-06-03T10:35:17.377507", "type": "knowledge_write", "path": "patterns/env-docker-compose.md", "category": "patterns", "subcategory": null}
+{"ts": "2026-06-03T17:42:18.687093", "type": "knowledge_write", "path": "errors/python/pydantic-settings-list-field.md", "category": "errors", "subcategory": "python"}

@@ -9,8 +9,9 @@
 
 - architecture, auth, model, pipeline, space
 
-## errors (2개)
+## errors (3개)
 
+- **python** (1개): pydantic-settings-list-field
 - docker-pg18-volume-path, expo-sdk-upgrade-53-to-56
 
 ## patterns (1개)

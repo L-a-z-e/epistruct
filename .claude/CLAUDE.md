@@ -8,10 +8,10 @@ AI 시대에 사람이 지식을 직접 인지·구조화하도록 돕는 개인
 
 | 항목 | 값 |
 |------|-----|
-| **Phase** | 1-A 착수 (개발 환경 완료, 백엔드 구현 시작) |
+| **Phase** | 1-A 진행 중 (프로젝트 셋업 완료, DB 연결 착수) |
 | **브랜치 전략** | main / dev 2단계. 상세 → `.claude/rules/git.md` |
 | **체크리스트** | `docs/planning/CHECKLIST.md` |
-| **다음 작업** | Phase 1-A 백엔드 구현 — 프로젝트 셋업 (Modular Monolith) |
+| **다음 작업** | Phase 1-A 백엔드 — PostgreSQL + pgvector 연결 |
 
 ## ⚠ 핵심
 - **Git 규칙**: `.claude/rules/git.md` 준수 — 브랜치 생성·push·PR 모두 포함
@@ -27,13 +27,9 @@ AI 시대에 사람이 지식을 직접 인지·구조화하도록 돕는 개인
 ## 빌드 & 실행
 
 ```bash
-# 백엔드 DB 기동
-cd epistruct-api && docker compose up -d
-
-# 백엔드 실행 (Phase 1-A 착수 후 갱신)
-
-# 프론트엔드 실행
-cd epistruct-app && pnpm start
+cd epistruct-api && docker compose up -d          # DB 기동
+uv run uvicorn src.main:app --reload --port 8000  # 백엔드 실행
+cd epistruct-app && pnpm start                    # 프론트엔드 실행
 ```
 
 ## 도메인 모델 요약 (P/C/M/D)
@@ -69,6 +65,7 @@ cd epistruct-app && pnpm start
 - 에러 발생 시: 에러 전문 + 관련 코드 최소 1파일 Read 후 수정 — 분석 없는 수정 금지
 - 기능 미동작 시 삭제 금지. 3회 미해결 시 사용자에게 상황 보고 — 삭제는 해결이 아님
 - 문자열 리터럴 2회+ 반복 시 상수/환경변수 추출 — 변경점 추적 불가 방지
+- **FastAPI·Python 패턴 적용 시**: `.claude/rules/fastapi-python.md` 읽기 — 알려진 에러 트리거 포함
 
 ## 검증 원칙
 - 테스트 실행 주장 시 실제 Bash 출력 확인 필수 — 미실행 시 "미실행" 명시
@@ -80,30 +77,10 @@ cd epistruct-app && pnpm start
 - 물리 삭제 (`DELETE FROM` — soft delete 사용)
 - P 노드 자동 확정 (사용자 확정 게이트 필수)
 
-## 런타임 버전 (확정)
-
-| 런타임 | 버전 | 고정 파일 |
-|--------|------|----------|
-| Python | 3.12 | `.python-version` |
-| Node.js | 24 LTS | `.nvmrc` |
-| PostgreSQL | 18 | `docker-compose.yml` (`pgvector/pgvector:pg18`) |
-| pgvector | 0.8.2 | `docker-compose.yml` |
-
-→ 버전 변경 절차: `.claude/knowledge/decisions/runtime-versions.md`
-
-## 배포 아키텍처 (확정)
-- **개발**: 로컬 Docker Compose (`epistruct-api/docker-compose.yml`)
-- **배포**: AWS ECS Fargate (서비스별 독립 Task)
-- **DB**: RDS PostgreSQL 18 + pgvector
-- **모니터링**: Prometheus + Grafana + Loki + GlitchTip
-- **LLM 관찰성**: Langfuse 클라우드 무료 플랜
-- **알림**: Telegram + Discord (Phase 1-A)
-
-→ 상세: `.claude/knowledge/decisions/infra-deployment.md`
-
 ## 참조 (Knowledge Base)
 - `.claude/knowledge/domain/` — 도메인 모델·아키텍처·파이프라인·인증·스페이스
-- `.claude/knowledge/decisions/` — 기술 결정 기록 (runtime-versions, api-design-conventions, infra-deployment)
+- `.claude/knowledge/decisions/` — 기술 결정 (runtime-versions, api-design-conventions, infra-deployment)
 - `.claude/knowledge/errors/` — 에러 패턴 기록
 - `.claude/knowledge/patterns/` — 코드·운영 패턴 기록
 - `.claude/rules/api-design.md` — API 명세 작성·검토 체크리스트 (API 설계 요청 시 반드시 읽기)
+- `.claude/rules/fastapi-python.md` — FastAPI/Python 개발 패턴 + 알려진 에러 트리거
