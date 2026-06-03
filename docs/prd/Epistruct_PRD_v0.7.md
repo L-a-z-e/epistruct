@@ -1,8 +1,8 @@
 # Epistruct (에피스트럭트) — Product Requirements Document (PRD)
 
-> 버전: v0.8
-> 작성일: 2026-06-02
-> 상태: Draft — DDD 기반 도메인 분리 반영
+> 버전: v0.9
+> 작성일: 2026-06-03
+> 상태: Draft — 배포 아키텍처·관찰성·알림 시스템 추가
 > 이름 유래: Epistemology(인식론/지식론) + Structure(구조). 인간이 지식을 인지·학습하는 과정을 시스템적 구조(Graph)로 변환해 저장한다는 목표의 물리적 결합.
 > 기반: 사용자가 파일 기반(thinker 에이전트)으로 실제 운용·검증한 지식 모델을 멀티유저 서비스로 제품화한다.
 > 한 줄 정의: AI 시대에 인간이 지식을 직접 인지·이해하고, 원리 단위로 통찰을 확장하도록 돕는 개인화 지식 구조화 플랫폼.
@@ -362,6 +362,18 @@ node_proposals
 - 플랫폼: iOS / Android / Web 동시 지원.
 - DB: PostgreSQL (확정).
 
+### 8.0 런타임 버전 (확정)
+
+| 런타임 | 버전 | EOL | 고정 파일 |
+|--------|------|-----|----------|
+| Python | 3.12 | 2028-10-31 | `.python-version` |
+| Node.js | 24 LTS | 2028-04-30 | `.nvmrc` |
+| PostgreSQL | 18 | 2030-11-14 | `docker-compose.yml` / RDS |
+| pgvector | 0.8.2 | - | 이미지 태그 |
+| Expo SDK | 53 | - | `package.json` |
+
+→ 버전 변경 절차: `knowledge/decisions/runtime-versions.md`
+
 ### 8.2 클라이언트 — Expo (React Native + RN Web) [확정]
 - 한 코드베이스(RN 컴포넌트: `View`, `Text` 등)로 iOS / Android / Web을 동시 커버.
 - 일반 React 웹과 달리 모바일·웹 코드가 분리되지 않는다 (RN Web이 RN 컴포넌트를 웹 DOM으로 렌더링).
@@ -468,6 +480,90 @@ AI/LLM 생태계(LangChain·LlamaIndex·임베딩 파이프라인) 1급 지원. 
 - 원리 추출/전이, 스코프 간 번역은 별도 프롬프트 파이프라인으로 모듈화.
 - 비용 통제: 캐싱·배치·임베딩 선검색으로 LLM 호출 최소화.
 
+### 8.7 배포 아키텍처 — AWS ECS Fargate [확정]
+
+**전략: 개발은 로컬 Docker Compose, 배포는 ECS Fargate**
+
+```
+[Expo Client]
+    ↓ HTTPS
+[ALB]
+    ↓
+[ECS Fargate Cluster]
+├── epistruct-api     (FastAPI — 4개 모듈 통합)
+├── epistruct-worker  (비동기: 임베딩·AI 파이프라인)
+└── monitoring        (Prometheus + Grafana + Loki + GlitchTip)
+
+[RDS PostgreSQL 18 + pgvector 0.8.2]
+[ElastiCache Redis]   (Rate limiting·캐시, Phase 1-A 또는 B)
+```
+
+**ECS Fargate 선택 이유:**
+- EC2 단일 인스턴스(1GB RAM)에서 앱 + 모니터링 스택 동시 실행 불가
+- 서비스별 독립 Task → 모니터링 / 앱 / DB 완전 분리
+- `docker-compose.yml` → ECS Task Definition 변환 경로 존재
+- Modular Monolith 모듈 경계 → 나중에 별도 ECS Service로 뽑기 용이 (MSA 전환 자연스러움)
+- 사용량 기반 과금. 실 사용자 없는 동안 desiredCount=0으로 비용 0 운영 가능
+
+**개발 환경:**
+- 로컬 Docker Compose 전용 (배포와 완전 분리)
+- RAM 128GB로 풀스택 모니터링 포함 전체 실행 가능
+
+**MSA 전환 트리거 (기존 8.4 기준):**
+- `ai_pipeline`: LLM 비용 전체 운영비 30% 초과 → 별도 ECS Service 분리
+- `knowledge`: DAU 10,000 초과 → 별도 ECS Service 분리
+
+→ 상세: `knowledge/decisions/infra-deployment.md`
+
+### 8.8 관찰성 스택 (Observability) [확정]
+
+| 레이어 | 도구 | 역할 |
+|--------|------|------|
+| 메트릭 | Prometheus + `prometheus-fastapi-instrumentator` | 앱 레벨 메트릭 자동 계측 |
+| 로그 | Loki + Promtail | 컨테이너 로그 집계 |
+| 시각화 | Grafana | 메트릭·로그 통합 대시보드 |
+| 에러 트래킹 | GlitchTip | Sentry SDK 호환, RAM 1-2GB |
+| LLM 관찰성 | Langfuse (클라우드 무료 플랜) | 토큰·비용·캐시 히트율 추적 |
+| 업타임 | Uptime Kuma | 서비스 업/다운 감시, 90+ 알림 채널 |
+| 인프라 | CloudWatch | AWS 리소스 (EC2/RDS) 기본 모니터링 |
+
+**핵심 모니터링 지표:**
+- P95 응답 레이턴시, 초당 요청 수, 4xx/5xx 에러율
+- Claude API 일일 토큰 소비량·비용, 캐시 히트율
+- MSA 분리 트리거: 모듈 CPU 80%+ 지속, 모듈 간 레이턴시 200ms+ 지속
+
+**Langfuse 전략:**
+- Phase 1-A: 클라우드 무료 플랜 (50,000 이벤트/월)
+- Phase 2+: 셀프호스팅 재검토 (최소 4vCPU + 16GB RAM 필요)
+
+### 8.9 알림 시스템 (Notification) [확정]
+
+**아키텍처 원칙:**
+- Strategy 패턴: 채널별 독립 구현 (`NotificationChannel` ABC)
+- Observer/Event-driven: Domain Event 기반 발행·구독 (비즈니스 로직 ↔ 알림 분리)
+- OCP: 새 채널 추가 = 구현 클래스 1개 + subscribe 1줄, 기존 코드 무수정
+
+```python
+class NotificationChannel(ABC):
+    async def send(self, recipient, message, **kwargs) -> bool: ...
+
+# EventBus로 느슨한 결합
+event_bus.subscribe(EventType.NODE_CONFIRMED, notify_in_app)
+event_bus.subscribe(EventType.NODE_CONFIRMED, notify_telegram)
+# 나중에 이 한 줄만 추가:
+# event_bus.subscribe(EventType.NODE_CONFIRMED, notify_email)
+```
+
+**채널 로드맵:**
+
+| Phase | 채널 | 대상 |
+|-------|------|------|
+| 1-A | 인앱 알림 (DB + 읽음 처리) | 사용자 |
+| 1-A | Telegram Bot | 개발자 (에러·시스템 알림) |
+| 1-A | Discord Webhook | 개발자 (이벤트 알림) |
+| 1-B+ | 이메일 (Resend, 3,000건/월 무료) | 사용자 |
+| 2+ | Slack, SMS | 팀·그룹 |
+
 ---
 
 ## 9. 비기능 요구사항
@@ -476,8 +572,9 @@ AI/LLM 생태계(LangChain·LlamaIndex·임베딩 파이프라인) 1급 지원. 
 - **편의성**: 입력은 최소 마찰(붙여넣기 한 번), 정리는 사용자 주도이되 AI가 부담을 덜어준다.
 - **인지 가능성**: 그래프가 커져도 사람이 전체를 파악·통제할 수 있어야 한다(압축·계층화·뷰 분리).
 - **성능**: 그래프가 커져도 탐색·제안 응답이 일정 수준 유지.
-- **보안/프라이버시**: 노드 단위 스코프, 출처 구분, 개인 데이터 격리.
-- **비용 통제**: LLM 호출 효율화로 운영비 최소화.
+- **보안/프라이버시**: OWASP API Security Top 10 + OWASP LLM Top 10 2025 기준 준수. 노드 단위 RLS, JWT 검증, Prompt Injection 방어, 개인 데이터 격리.
+- **비용 통제**: LLM 호출 효율화(프롬프트 캐싱·배치·임베딩 선검색)로 운영비 최소화. Langfuse로 토큰 소비 실시간 추적.
+- **관찰성**: 메트릭·로그·트레이스·에러·LLM 비용 5개 레이어 모니터링. 병목 구간 실시간 파악 가능.
 
 ---
 
