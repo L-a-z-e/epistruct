@@ -1,3 +1,0 @@
-{"ts":"2026-06-03","action":"trim","target":"CLAUDE.md","detail":"109줄→86줄. 런타임/배포 섹션 참조로 축소. 현재상태 업데이트(프로젝트셋업 완료→pgvector연결 착수). fastapi-python.md 트리거 참조 추가","status":"applied"}
-{"ts":"2026-06-03","action":"create","target":"knowledge/errors/python/pydantic-settings-list-field.md","detail":"BaseSettings list[str] 필드 .env JSON 배열 파싱 에러 패턴 기록","status":"applied"}
-{"ts":"2026-06-03","action":"create","target":"rules/fastapi-python.md","detail":"FastAPI/Python 트리거 규칙 파일. list필드 추가/SettingsError 발생 시 knowledge 파일 자동 참조 트리거 포함","status":"applied"}

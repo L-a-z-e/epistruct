@@ -1,0 +1,55 @@
+[config]
+model = "gemini/gemini-1.5-flash"
+
+[pr_reviewer]
+extra_instructions = """
+이 프로젝트의 아키텍처 규칙을 기반으로 리뷰하세요:
+
+## 프로젝트 개요
+- FastAPI (Modular Monolith) + PostgreSQL + pgvector 백엔드
+- 모듈: auth / knowledge / space / ai_pipeline
+- 각 모듈은 domain / services / repositories / router.py / schemas.py 구조
+
+## 반드시 확인할 규칙
+1. **모듈 경계**: 각 모듈은 자기 테이블만 직접 접근. 타 모듈 테이블 직접 JOIN 금지. service layer 경유 필수.
+2. **Soft Delete**: 모든 삭제는 deleted_at TIMESTAMPTZ 업데이트. DELETE FROM 절대 금지.
+3. **API Envelope**: 단일 리소스는 {"data": {...}}, 목록은 {"data": [...], "meta": {...}} 형식 필수. 리소스 직접 반환 금지.
+4. **HTTP 상태 코드**: 생성=201+Location헤더, 비동기=202+status_url, 삭제=204, 입력검증실패=422, 파싱실패=400, 상태충돌=409.
+5. **에러 응답 형식**: {"status", "code", "message", "detail", "instance", "trace_id"} 모두 포함.
+6. **에러 코드 네이밍**: {도메인}_{에러유형} 형식 (예: SPACE_NOT_FOUND, AUTH_TOKEN_EXPIRED).
+7. **날짜 형식**: ISO 8601 UTC (2026-06-02T09:00:00Z). Unix timestamp 단독 사용 금지.
+8. **페이지네이션**: Cursor 기반 (?limit=20&after=<cursor>). offset/page 기반 금지.
+9. **SQLAlchemy async**: expire_on_commit=False 필수. get_session()은 Depends()로만 주입.
+10. **환경변수 list 타입**: pydantic-settings에서 list[str] 필드는 .env에 JSON 배열 형식 필요.
+
+## 코드 품질 체크
+- 보안 취약점 (SQL injection, JWT 검증 누락, 인가 우회 등)
+- N+1 쿼리 문제
+- 불필요한 데이터 노출 (비밀번호 해시, 내부 ID 등을 응답에 포함)
+- 트랜잭션 경계 누락 (여러 DB 작업이 하나의 트랜잭션으로 묶여야 하는 경우)
+"""
+
+[pr_description]
+extra_instructions = """
+PR 설명을 아래 형식으로 작성하세요:
+
+## 변경 요약 (한국어)
+- 무엇을 변경했는가 (What)
+- 왜 변경했는가 (Why)
+
+## 변경된 파일
+- 각 파일별 변경 내용 한 줄 요약
+
+## 영향 범위
+- 어떤 모듈/API에 영향을 주는가
+- Breaking change 여부
+"""
+
+[pr_code_suggestions]
+extra_instructions = """
+코드 개선 제안 시:
+- FastAPI/Python best practice 기반으로 제안하세요.
+- 성능 개선 (쿼리 최적화, 불필요한 await 제거 등)
+- 타입 힌트 누락 지적
+- Pydantic 모델 검증 개선
+"""

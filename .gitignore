@@ -36,6 +36,8 @@ Thumbs.db
 *.log
 logs/
 
-# Claude
+# Claude — 런타임/로컬 전용 (커밋 제외)
 .claude/sessions/
 .claude/contexts/
+.claude/diagnostics/
+.claude/settings.local.json
