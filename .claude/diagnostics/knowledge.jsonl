@@ -1,0 +1,12 @@
+{"ts": "2026-06-02T20:51:48.361047", "type": "knowledge_write", "path": "domain/model.md", "category": "domain", "subcategory": null}
+{"ts": "2026-06-02T20:52:09.047902", "type": "knowledge_write", "path": "domain/architecture.md", "category": "domain", "subcategory": null}
+{"ts": "2026-06-02T20:52:28.813091", "type": "knowledge_write", "path": "domain/pipeline.md", "category": "domain", "subcategory": null}
+{"ts": "2026-06-02T20:52:44.453283", "type": "knowledge_write", "path": "domain/auth.md", "category": "domain", "subcategory": null}
+{"ts": "2026-06-02T20:53:09.938257", "type": "knowledge_write", "path": "domain/space.md", "category": "domain", "subcategory": null}
+{"ts": "2026-06-02T22:09:58.746896", "type": "knowledge_write", "path": "decisions/domain-model-ddd.md", "category": "decisions", "subcategory": null}
+{"ts": "2026-06-02T22:49:14.545000", "type": "knowledge_write", "path": "decisions/api-design-conventions.md", "category": "decisions", "subcategory": null}
+{"ts": "2026-06-03T08:37:21.176159", "type": "knowledge_write", "path": "decisions/runtime-versions.md", "category": "decisions", "subcategory": null}
+{"ts": "2026-06-03T09:01:00.374965", "type": "knowledge_write", "path": "decisions/infra-deployment.md", "category": "decisions", "subcategory": null}
+{"ts": "2026-06-03T10:34:52.868947", "type": "knowledge_write", "path": "errors/docker-pg18-volume-path.md", "category": "errors", "subcategory": null}
+{"ts": "2026-06-03T10:35:06.121560", "type": "knowledge_write", "path": "errors/expo-sdk-upgrade-53-to-56.md", "category": "errors", "subcategory": null}
+{"ts": "2026-06-03T10:35:17.377507", "type": "knowledge_write", "path": "patterns/env-docker-compose.md", "category": "patterns", "subcategory": null}

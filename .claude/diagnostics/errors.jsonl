@@ -1,0 +1,6 @@
+{"ts": "2026-06-03T07:22:04.140092", "type": "error", "command": "git branch -d docs/dev-env-package-structure && git checkout -b docs/dev-env-package-structure", "attempt": 1}
+{"ts": "2026-06-03T07:22:08.278425", "type": "resolved", "attempts": 1}
+{"ts": "2026-06-03T10:02:54.995529", "type": "error", "command": "pnpm add --save-dev babel-plugin-module-resolver 2>&1 | grep \"^\\+\"", "attempt": 1}
+{"ts": "2026-06-03T10:03:01.883025", "type": "resolved", "attempts": 1}
+{"ts": "2026-06-03T10:18:19.069647", "type": "error", "command": "docker exec -it epistruct-db psql -U Laze -d epistruct -c \"CREATE EXTENSION IF NOT EXISTS vector;\" 2>&1", "attempt": 1}
+{"ts": "2026-06-03T10:18:23.114845", "type": "resolved", "attempts": 1}

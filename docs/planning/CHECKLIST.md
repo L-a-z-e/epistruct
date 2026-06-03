@@ -1,6 +1,6 @@
 # Epistruct 개발 체크리스트
 
-> 마지막 업데이트: 2026-06-03 (보안·모니터링·알림·배포 섹션 추가)
+> 마지막 업데이트: 2026-06-03 (프로젝트 셋업 완료)
 > 기준 문서: [PRD v0.9](../prd/Epistruct_PRD_v0.7.md)
 
 ---
@@ -119,7 +119,7 @@
 - [x] 노드 추출 LLM structured output 스키마 정의 — `docs/design/llm-extraction-schema.md`
 
 ### 백엔드 구현 (FastAPI)
-- [ ] 프로젝트 셋업 (Modular Monolith 구조)
+- [x] 프로젝트 셋업 (Modular Monolith 구조)
 - [ ] PostgreSQL + pgvector 연결
 - [ ] Supabase Auth 연동 (JWT 검증 미들웨어)
 - [ ] Supabase webhook → users 테이블 자동 생성
