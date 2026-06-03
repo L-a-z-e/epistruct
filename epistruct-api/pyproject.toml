@@ -18,6 +18,7 @@ dependencies = [
     "slowapi>=0.1.9",
     "sentry-sdk[fastapi]>=2.25",
     "nh3>=0.2",
+    "pgvector>=0.4.2",
 ]
 
 [build-system]
