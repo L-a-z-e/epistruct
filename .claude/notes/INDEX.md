@@ -9,3 +9,6 @@
 | [pydantic-basics.md](pydantic-basics.md) | Pydantic — 타입 검증, BaseModel/BaseSettings, Spring @Valid 비교 | 2026-06-03 |
 | [sqlalchemy-async-database.md](sqlalchemy-async-database.md) | SQLAlchemy 비동기 DB 연결 — engine, sessionmaker, Base, get_session yield 패턴 | 2026-06-03 |
 | [fastapi-uvicorn-run.md](fastapi-uvicorn-run.md) | FastAPI 실행 구조 — Uvicorn, uv, 가상환경, Spring Tomcat 비교 | 2026-06-03 |
+| [alembic-setup-concepts.md](alembic-setup-concepts.md) | Alembic 설정 과정에서 학습한 개념들 (uv, ini, env.py, Python 기초) | 2026-06-03 |
+| [sqlalchemy-model-column-options.md](sqlalchemy-model-column-options.md) | SQLAlchemy mapped_column 옵션 — default, server_default, nullable, Enum 저장 방식 | 2026-06-03 |
+| [embedding-vs-llm-models.md](embedding-vs-llm-models.md) | 생성 모델(LLM)과 임베딩 모델 차이 — Vector 차원 수, embedding_model 컬럼 패턴 | 2026-06-03 |
