@@ -12,6 +12,9 @@
 | `config.py`에 `list[str]` / `list[int]` / `dict[*]` / `set[*]` 필드 추가 | `knowledge/errors/python/pydantic-settings-list-field.md` |
 | `.env` / `.env.example`에 list 관련 환경변수 추가 | `knowledge/errors/python/pydantic-settings-list-field.md` |
 | `pydantic_settings.exceptions.SettingsError` 에러 발생 | `knowledge/errors/python/pydantic-settings-list-field.md` |
+| `model_dump()` 결과 dict에서 UUID 필드를 `uuid.UUID()` 로 감쌀 때 | `knowledge/errors/python/pydantic-model-dump-uuid.md` |
+| `AttributeError: 'UUID' object has no attribute 'replace'` 발생 | `knowledge/errors/python/pydantic-model-dump-uuid.md` |
+| Supabase webhook DELETE 이벤트 처리 시 | `knowledge/patterns/auth/supabase-webhook-payload.md` |
 
 ---
 
