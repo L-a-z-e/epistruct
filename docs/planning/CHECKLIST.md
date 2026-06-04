@@ -1,6 +1,6 @@
 # Epistruct 개발 체크리스트
 
-> 마지막 업데이트: 2026-06-03 (PostgreSQL + pgvector 연결 완료)
+> 마지막 업데이트: 2026-06-04 (Supabase Auth 연동 + webhook + F0 프로필 엔드포인트 완료)
 > 기준 문서: [PRD v0.9](../prd/Epistruct_PRD_v0.7.md)
 
 ---
@@ -121,9 +121,9 @@
 ### 백엔드 구현 (FastAPI)
 - [x] 프로젝트 셋업 (Modular Monolith 구조)
 - [x] PostgreSQL + pgvector 연결
-- [ ] Supabase Auth 연동 (JWT 검증 미들웨어)
-- [ ] Supabase webhook → users 테이블 자동 생성
-- [ ] F0: 인증 엔드포인트 (프로필 조회/수정)
+- [x] Supabase Auth 연동 (JWT 검증 미들웨어)
+- [x] Supabase webhook → users 테이블 자동 생성
+- [x] F0: 인증 엔드포인트 (프로필 조회/수정)
 - [ ] F1: 혼합 입력 처리
   - [ ] URL 크롤링 + 텍스트 추출
   - [ ] PDF 업로드 + 텍스트 추출

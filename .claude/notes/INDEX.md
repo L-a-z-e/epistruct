@@ -12,3 +12,5 @@
 | [alembic-setup-concepts.md](alembic-setup-concepts.md) | Alembic 설정 과정에서 학습한 개념들 (uv, ini, env.py, Python 기초) | 2026-06-03 |
 | [sqlalchemy-model-column-options.md](sqlalchemy-model-column-options.md) | SQLAlchemy mapped_column 옵션 — default, server_default, nullable, Enum 저장 방식 | 2026-06-03 |
 | [embedding-vs-llm-models.md](embedding-vs-llm-models.md) | 생성 모델(LLM)과 임베딩 모델 차이 — Vector 차원 수, embedding_model 컬럼 패턴 | 2026-06-03 |
+| [webhook-explained.md](webhook-explained.md) | Webhook 개념 + Supabase → FastAPI 동작 흘름, 서버 다운 시 대응 전략 | 2026-06-04 |
+| [fastapi-router-imports.md](fastapi-router-imports.md) | FastAPI router imports — APIRouter/Depends/Header/status/hmac.compare_digest 역할과 문법 | 2026-06-04 |
