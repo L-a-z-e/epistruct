@@ -122,8 +122,14 @@
 - [x] 프로젝트 셋업 (Modular Monolith 구조)
 - [x] PostgreSQL + pgvector 연결
 - [x] Supabase Auth 연동 (JWT 검증 미들웨어)
-- [x] Supabase webhook → users 테이블 자동 생성
+  - [x] 실 Supabase 프로젝트 생성 + ES256 JWKS 방식으로 JWT 검증 구현
+  - [x] 실제 JWT 토큰으로 동작 검증
+- [ ] Supabase webhook → users 테이블 자동 생성
+  - [x] 코드 구현 완료
+  - [x] get_or_create로 /auth/me 첫 호출 시 자동 생성 (개발 단계 대체)
+  - [ ] Supabase Dashboard webhook 등록 — 배포 단계에서 설정
 - [x] F0: 인증 엔드포인트 (프로필 조회/수정)
+  - [x] 실 토큰으로 /auth/me 동작 확인
 - [ ] F1: 혼합 입력 처리
   - [ ] URL 크롤링 + 텍스트 추출
   - [ ] PDF 업로드 + 텍스트 추출
@@ -281,6 +287,7 @@
 
 - [x] `.env` `.gitignore` 등록 확인 (기존 항목 — 재확인)
 - [x] `SUPABASE_JWT_SECRET`, `ANTHROPIC_API_KEY` 환경변수 관리
+  - [x] 실 Supabase 프로젝트 키로 `.env` 업데이트
 - [ ] 개발 / 스테이징 / 프로덕션 환경별 별도 API 키 운영
 - [ ] Secrets Scanner CI 통합 (git-secrets 또는 trufflehog)
 
